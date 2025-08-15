@@ -8,21 +8,18 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const sendVerificationEmail = async (to, token, name) => {
-    const verifyLink = `http://localhost:5000/api/auth/verify/${token}`;
-
+const sendVerificationCodeEmail = async (to, code, name) => {
     await transporter.sendMail({
         from: `"Nespak LMS" <${process.env.EMAIL_USER}>`,
         to,
-        subject: "Verify your Nespak LMS account",
+        subject: "Your Nespak LMS Verification Code",
         html: `
-            <h3>Welcome to Nespak LMS, ${name}</h3>
-            <p>Please verify your account by clicking the link below:</p>
-            <a href="${verifyLink}" style="background: green; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Verify Email</a>
-            <p>If the button doesn't work, copy and paste this link into your browser:</p>
-            <p>${verifyLink}</p>
+            <h3>Hello ${name},</h3>
+            <p>Your verification code is:</p>
+            <h2 style="color: green; letter-spacing: 3px;">${code}</h2>
+            <p>This code will expire in 10 minutes.</p>
         `
     });
 };
 
-module.exports = { sendVerificationEmail };
+module.exports = { sendVerificationCodeEmail };
