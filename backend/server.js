@@ -5,7 +5,12 @@ const { connectDB } = require('./config/db');
 const path = require('path');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:3000",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -22,6 +27,7 @@ app.use('/api/tags', require('./routes/tagRoutes'));
 app.use('/api/views', require('./routes/viewRoutes'));
 app.use('/api/search', require('./routes/searchRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use("/api/requests", require("./routes/requestRoutes"));
 
 // root
 app.get('/', (req, res) => res.send('Nespak LMS Backend Running...'));
