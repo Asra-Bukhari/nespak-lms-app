@@ -1,52 +1,70 @@
-// controllers/viewsController.js
-const { sql } = require('../config/db');
+const sql = require("mssql");
 
-exports.logView = async (req, res) => {
+// Add or get view progress
+exports.getOrCreateView = async (req, res) => {
+  const { user_id, content_id } = req.body;
   try {
-    const { content_id, progress } = req.body;
-    if (!content_id) return res.status(400).json({ message: 'content_id required' });
-    const user_id = req.user.user_id;
+    // check if record exists
+    const check = await sql.query`
+      SELECT * FROM Views WHERE user_id = ${user_id} AND content_id = ${content_id}
+    `;
 
-    // Upsert: if exists create or update progress & viewed_at
-    // We'll insert a new row each view; for tracking progress per user-content you might update instead
+    if (check.recordset.length === 0) {
+      // insert new record with progress = 0
+      await sql.query`
+        INSERT INTO Views (user_id, content_id, progress)
+        VALUES (${user_id}, ${content_id}, 0)
+      `;
+      return res.json({ progress: 0 });
+    }
+
+    return res.json({ progress: check.recordset[0].progress });
+  } catch (err) {
+    console.error("getOrCreateView error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Update progress (only if greater than previous)
+exports.updateProgress = async (req, res) => {
+  const { user_id, content_id, progress } = req.body;
+  try {
+    // get current
+    const current = await sql.query`
+      SELECT progress FROM Views WHERE user_id = ${user_id} AND content_id = ${content_id}
+    `;
+
+    if (current.recordset.length === 0) {
+      return res.status(404).json({ error: "View record not found" });
+    }
+
+    const oldProgress = current.recordset[0].progress;
+    if (progress > oldProgress) {
+      await sql.query`
+        UPDATE Views SET progress = ${progress}, viewed_at = GETDATE()
+        WHERE user_id = ${user_id} AND content_id = ${content_id}
+      `;
+      return res.json({ success: true, progress });
+    }
+
+    return res.json({ success: true, progress: oldProgress }); // unchanged
+  } catch (err) {
+    console.error("updateProgress error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Mark as completed
+exports.markAsComplete = async (req, res) => {
+  const { user_id, content_id } = req.body;
+  try {
     await sql.query`
-      INSERT INTO Views (user_id, content_id, viewed_at, progress)
-      VALUES (${user_id}, ${content_id}, GETDATE(), ${progress || 0})
+      UPDATE Views SET progress = 100, viewed_at = GETDATE()
+      WHERE user_id = ${user_id} AND content_id = ${content_id}
     `;
-    res.json({ message: 'View logged' });
+    res.json({ success: true, progress: 100 });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-exports.getContentViews = async (req, res) => {
-  try {
-    const content_id = parseInt(req.params.id);
-    const result = await sql.query`
-      SELECT v.*, u.name, u.email FROM Views v
-      JOIN Users u ON v.user_id = u.user_id
-      WHERE v.content_id = ${content_id} ORDER BY v.viewed_at DESC
-    `;
-    res.json(result.recordset);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-exports.getUserAnalytics = async (req, res) => {
-  try {
-    const user_id = parseInt(req.params.id);
-    const result = await sql.query`
-      SELECT c.content_id, c.title, MAX(v.progress) AS max_progress, COUNT(v.view_id) AS views
-      FROM Views v JOIN Content c ON v.content_id = c.content_id
-      WHERE v.user_id = ${user_id}
-      GROUP BY c.content_id, c.title
-    `;
-    res.json(result.recordset);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("markAsComplete error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 };

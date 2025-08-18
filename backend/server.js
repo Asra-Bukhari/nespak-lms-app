@@ -4,13 +4,20 @@ const cors = require('cors');
 const { connectDB } = require('./config/db');
 const path = require('path');
 
+// Create Express app
 const app = express();
+
 app.use(cors({
   origin: "http://localhost:3000",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
 }));
 
+
+
+
+// Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -18,6 +25,7 @@ app.use(express.urlencoded({ extended: false }));
 const uploadsDir = process.env.UPLOADS_DIR || 'uploads';
 app.use(`/${uploadsDir}`, express.static(path.join(__dirname, uploadsDir)));
 
+// Connect to DB
 connectDB();
 
 // Routes
@@ -28,8 +36,9 @@ app.use('/api/views', require('./routes/viewRoutes'));
 app.use('/api/search', require('./routes/searchRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use("/api/requests", require("./routes/requestRoutes"));
+app.use("/api/dashboard", require("./routes/dashboardRoutes"));
 
-// root
+// Root
 app.get('/', (req, res) => res.send('Nespak LMS Backend Running...'));
 
 const PORT = process.env.PORT || 5000;

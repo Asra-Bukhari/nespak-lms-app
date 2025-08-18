@@ -119,7 +119,7 @@ exports.login = async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ message: "Invalid email or password" });
 
-    // Send back user_id
+    // Send back user_ida
     res.json({ user_id: user.user_id });
   } catch (err) {
     console.error(err);

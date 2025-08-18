@@ -1,13 +1,17 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const ctrl = require('../controllers/contentController');
-const { auth, adminOnly } = require('../middleware/auth');
-const { upload } = require('../middleware/upload');
+const {
+  getContentBySection,
+  getContentById,
+  uploadContent,
+} = require("../controllers/contentController");
 
-router.get('/', auth, ctrl.getAllContent);
-router.get('/:id', auth, ctrl.getContentById);
-router.post('/', auth, adminOnly, upload.single('slide'), ctrl.createContent);
-router.put('/:id', auth, adminOnly, ctrl.updateContent);
-router.delete('/:id', auth, adminOnly, ctrl.deleteContent);
+// Routes
+// /api/content/section/:sectionId -> fetch all content in a section
+router.get("/section/:sectionId", getContentBySection);
+
+// /api/content/:contentId -> fetch single content details
+router.get("/:contentId", getContentById);
+router.post("/", uploadContent);
 
 module.exports = router;

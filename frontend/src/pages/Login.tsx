@@ -16,42 +16,37 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/login`, {
-        email,
-        password,
-      });
+  try {
+    const res = await axios.post(`${API_BASE_URL}/api/auth/login`, {
+      email,
+      password,
+    });
 
-      // Save user_id in localStorage
-      localStorage.setItem("user_id", res.data.user_id);
+localStorage.setItem("user_id", res.data.user_id);
 
-      toast({
-        title: "Login Successful",
-  description: "Redirecting to your dashboard...",
-  variant: "default", 
-  style: {
-    backgroundColor: "white",
-    color: "black",          
-  },
-      });
 
-      navigate("/dashboard");
-    } catch (err: any) {
-      console.error(err);
-      toast({
-        title: "Login Failed",
-        description: err.response?.data?.message || "Something went wrong",
-        variant: "destructive",
-         style: {
-    backgroundColor: "white",
-    color: "black",          
-  },
-      });
-    }
-  };
+    toast({
+      title: "Login Successful",
+      description: "Redirecting to your dashboard...",
+      variant: "default", 
+      style: { backgroundColor: "white", color: "black" },
+    });
+
+    navigate("/dashboard");
+  } catch (err: any) {
+    console.error(err);
+    toast({
+      title: "Login Failed",
+      description: err.response?.data?.message || "Something went wrong",
+      variant: "destructive",
+      style: { backgroundColor: "white", color: "black" },
+    });
+  }
+};
+
 
   return (
     <div

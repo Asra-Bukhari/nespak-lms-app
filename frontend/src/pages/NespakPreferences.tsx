@@ -1,50 +1,58 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import axios from "axios";
 
-const programs = [
-  {
-    id: 7,
-    title: "NESPAK Quality Standards",
-    description: "Comprehensive guide to NESPAK's quality standards and implementation procedures.",
-    speaker: "Eng. Usman Malik",
-    image: "/placeholder-standards.jpg",
-    duration: "1 hour",
-    category: "Standards"
-  },
-  {
-    id: 8,
-    title: "Internal Policy Guidelines",
-    description: "Understanding NESPAK's internal policies, procedures, and compliance requirements.",
-    speaker: "HR Team",
-    image: "/placeholder-policy.jpg",
-    duration: "45 mins",
-    category: "Policy"
-  },
-  {
-    id: 9,
-    title: "Safety Protocols & Procedures",
-    description: "Essential safety guidelines and protocols for all NESPAK projects and operations.",
-    speaker: "Safety Officer",
-    image: "/placeholder-safety.jpg",
-    duration: "2 hours",
-    category: "Safety"
-  }
-];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+interface Program {
+  content_id: number;
+  title: string;
+  short_description: string;
+  speaker_name: string;
+  thumbnail: string | null;
+  level: string;
+  uploaded_at: string;
+  tags: string[];
+  duration?: string;
+  category?: string;
+}
 
 const NespakPreferences = () => {
-  const [filteredPrograms, setFilteredPrograms] = useState(programs);
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [filteredPrograms, setFilteredPrograms] = useState<Program[]>([]);
   const navigate = useNavigate();
+
+  // Fetch content for sectionId=3 (NESPAK Preferences)
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/content/section/3`);
+        console.log("API raw response:", res.data);
+
+        const data: Program[] = Array.isArray(res.data.content) ? res.data.content : [];
+        console.log("Parsed programs:", data);
+
+        setPrograms(data);
+        setFilteredPrograms(data);
+      } catch (err) {
+        console.error("Error fetching programs:", err);
+        setPrograms([]);
+        setFilteredPrograms([]);
+      }
+    };
+    fetchPrograms();
+  }, []);
 
   const handleSearch = (query: string) => {
     const filtered = programs.filter(program =>
       program.title.toLowerCase().includes(query.toLowerCase()) ||
-      program.description.toLowerCase().includes(query.toLowerCase()) ||
-      program.speaker.toLowerCase().includes(query.toLowerCase())
+      program.short_description.toLowerCase().includes(query.toLowerCase()) ||
+      program.speaker_name.toLowerCase().includes(query.toLowerCase())
     );
     setFilteredPrograms(filtered);
   };
@@ -82,16 +90,22 @@ const NespakPreferences = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPrograms.map((program) => (
             <Card 
-              key={program.id} 
+              key={program.content_id} 
               className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleProgramClick(program.id)}
+              onClick={() => handleProgramClick(program.content_id)}
             >
               <div className="aspect-video bg-gray-200 rounded-t-lg relative overflow-hidden">
-                <img 
-                  src={program.image} 
-                  alt={program.title}
-                  className="w-full h-full object-cover"
-                />
+                {program.thumbnail ? (
+                  <img 
+                    src={program.thumbnail} 
+                    alt={program.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                    <Play className="w-12 h-12 text-gray-600" />
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                   <Play className="w-12 h-12 text-white opacity-80" />
                 </div>
@@ -102,7 +116,7 @@ const NespakPreferences = () => {
                   <div className="flex-1">
                     <CardTitle className="text-lg line-clamp-2">{program.title}</CardTitle>
                     <CardDescription className="mt-2 line-clamp-3">
-                      {program.description}
+                      {program.short_description}
                     </CardDescription>
                   </div>
                 </div>
@@ -113,15 +127,17 @@ const NespakPreferences = () => {
                   <div className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
                       <AvatarFallback className="text-xs">
-                        {program.speaker.split(' ').map(n => n[0]).join('')}
+                        {program.speaker_name?.split(" ").map(n => n[0]).join("")}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm text-gray-600">{program.speaker}</span>
+                    <span className="text-sm text-gray-600">{program.speaker_name}</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline">{program.duration}</Badge>
-                    <Badge variant="secondary">{program.category}</Badge>
+                    {program.tags?.length > 0 && (
+                      <Badge variant="outline">{program.tags[0]}</Badge>
+                    )}
+                    <Badge variant="secondary">{program.level}</Badge>
                   </div>
                 </div>
               </CardContent>

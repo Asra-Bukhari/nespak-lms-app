@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { 
   Search, 
@@ -15,13 +15,23 @@ import {
   Shield
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import logo from "@/assets/nespak-logo.jpg";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
   title?: string;
   searchPlaceholder?: string;
   onSearch?: (query: string) => void;
+}
+
+interface User {
+  user_id: string;
+  name: string;
+  email: string;
+  role: string;
 }
 
 const DashboardLayout = ({ 
@@ -32,8 +42,45 @@ const DashboardLayout = ({
 }: DashboardLayoutProps) => {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [newName, setNewName] = useState("");
+
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Fetch user info
+  useEffect(() => {
+    const userId = localStorage.getItem("user_id");
+    if (!userId) return;
+
+    axios.get(`${API_BASE_URL}/api/users/${userId}`)
+      .then(res => {
+        setUser(res.data);
+        setNewName(res.data.name);
+      })
+      .catch(err => console.error("Failed to fetch user:", err));
+  }, []);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .toUpperCase();
+  };
+
+  const handleSaveName = () => {
+    if (!user) return;
+    if (!newName.trim()) return; // prevent empty name
+
+    axios.put(`${API_BASE_URL}/api/users/${user.user_id}`, { name: newName })
+      .then(res => {
+        setUser(res.data);
+        setEditingName(false);
+      })
+      .catch(err => console.error("Failed to update name:", err));
+  };
 
   const sidebarItems = [
     { icon: Home, label: "Dashboard", path: "/dashboard" },
@@ -45,7 +92,7 @@ const DashboardLayout = ({
   ];
 
   const handleLogout = () => {
-    // TODO: Call logout API here
+    localStorage.removeItem("user_id"); // clear user session
     navigate('/');
   };
 
@@ -60,10 +107,9 @@ const DashboardLayout = ({
       {/* Top Navigation */}
       <header className="bg-white border-b h-16 fixed top-0 left-0 right-0 z-50">
         <div className="flex items-center justify-between h-full px-6">
-          {/* Logo and Title */}
+          {/* Logo */}
           <div className="flex items-center gap-3">
             <img src={logo} alt="NESPAK logo" className="h-8 w-auto" />
-            {title && <h1 className="text-lg font-semibold">{title}</h1>}
           </div>
 
           {/* Search Bar */}
@@ -90,10 +136,32 @@ const DashboardLayout = ({
             
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder-avatar.jpg" />
-                <AvatarFallback>JD</AvatarFallback>
+                {user ? (
+                  <AvatarFallback>{getInitials(newName)}</AvatarFallback>
+                ) : (
+                  <AvatarFallback>JD</AvatarFallback>
+                )}
               </Avatar>
-              <span className="text-sm font-medium">John Doe</span>
+
+              {editingName ? (
+                <div className="flex gap-1 items-center">
+                  <Input 
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="w-32"
+                  />
+                  <Button size="sm" onClick={handleSaveName}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setEditingName(false); setNewName(user?.name || ""); }}>Cancel</Button>
+                </div>
+              ) : (
+                <span 
+                  className="text-sm font-medium cursor-pointer hover:underline" 
+                  onClick={() => setEditingName(true)}
+                >
+                  {user?.name || "John Doe"}
+                </span>
+              )}
+
               <Button variant="ghost" size="icon" onClick={handleLogout}>
                 <LogOut className="w-4 h-4" />
               </Button>

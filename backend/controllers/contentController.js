@@ -1,122 +1,217 @@
-const { sql } = require('../config/db');
-const validator = require('validator');
+const sql = require("mssql");
 
-// Helper: simple YouTube URL check
-function isValidYouTube(url) {
-  if (!url) return false;
-  return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.*/i.test(url);
-}
+// helper: extract YouTube thumbnail
+const getYouTubeThumbnail = (url) => {
+  if (!url) return null;
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([\w-]{11})/);
+  if (match && match[1]) {
+    return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+  }
+  return null;
+};
 
-exports.createContent = async (req, res) => {
+// convert any YouTube link to embed link
+const getYouTubeEmbedUrl = (url) => {
+  if (!url) return null;
+  const match = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})(?:\?|&|$)/);
+  return match ? `https://www.youtube.com/embed/${match[1]}` : url;
+};
+
+
+// Get all content for a section (overview page)
+exports.getContentBySection = async (req, res) => {
+  const { sectionId } = req.params;
+
   try {
-    // admin only via middleware
-    const { title, description, speaker_name, video_url, section_id } = req.body;
-    const slideFile = req.file; // multer
-    if (!title || !video_url || !section_id) return res.status(400).json({ message: 'Missing fields' });
-    if (!isValidYouTube(video_url)) return res.status(400).json({ message: 'Invalid YouTube URL' });
+    const pool = await sql.connect();
+    const result = await pool.request()
+      .input("sectionId", sql.Int, sectionId)
+      .query(`
+        SELECT 
+          c.content_id,
+          c.title,
+          c.description,
+          c.speaker_name,
+          c.video_url,
+          c.level,
+          c.uploaded_at,
+          u.name AS uploaded_by,
+          STRING_AGG(t.name, ', ') AS tags
+        FROM Content c
+        JOIN Users u ON c.uploaded_by = u.user_id
+        LEFT JOIN ContentTags ct ON c.content_id = ct.content_id
+        LEFT JOIN Tags t ON ct.tag_id = t.tag_id
+        WHERE c.section_id = @sectionId AND c.is_deleted = 0
+        GROUP BY c.content_id, c.title, c.description, c.speaker_name, 
+                 c.video_url, c.level, c.uploaded_at, u.name
+        ORDER BY c.uploaded_at DESC
+      `);
 
-    const slide_url = slideFile ? `${process.env.BASE_URL}/${process.env.UPLOADS_DIR || 'uploads'}/${slideFile.filename}` : null;
+    const data = result.recordset.map(item => {
+      return {
+        content_id: item.content_id,
+        title: item.title,
+        speaker_name: item.speaker_name,
+        level: item.level,
+        uploaded_at: item.uploaded_at,
+        tags: item.tags ? item.tags.split(", ") : [],
+        thumbnail: getYouTubeThumbnail(item.video_url),
+        short_description: item.description 
+          ? item.description.split(".")[0] + "." 
+          : "",
+      };
+    });
 
-    await sql.query`
-      INSERT INTO Content (title, description, speaker_name, video_url, slide_url, section_id, uploaded_by)
-      VALUES (${title}, ${description || null}, ${speaker_name || null}, ${video_url}, ${slide_url}, ${section_id}, ${req.user.user_id})
-    `;
+    res.json({ content: data });
 
-    res.status(201).json({ message: 'Content created' });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching content by section:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-exports.getAllContent = async (req, res) => {
+// Get single content details (details page)
+exports.getContentById = async (req, res) => {
+  const { contentId } = req.params;
+
   try {
-    // optional filters: section, tag, speaker, title
-    const { section, tag, speaker, title } = req.query;
+    const pool = await sql.connect();
+    const result = await pool.request()
+      .input("contentId", sql.Int, contentId)
+      .query(`
+        SELECT 
+          c.content_id,
+          c.title,
+          c.description,
+          c.speaker_name,
+          c.video_url,
+          c.slide_url,
+          c.level,
+          c.uploaded_at,
+          u.name AS uploaded_by,
+          s.name AS section_name,
+          STRING_AGG(t.name, ', ') AS tags
+        FROM Content c
+        JOIN Users u ON c.uploaded_by = u.user_id
+        JOIN Sections s ON c.section_id = s.section_id
+        LEFT JOIN ContentTags ct ON c.content_id = ct.content_id
+        LEFT JOIN Tags t ON ct.tag_id = t.tag_id
+        WHERE c.content_id = @contentId AND c.is_deleted = 0
+        GROUP BY c.content_id, c.title, c.description, c.speaker_name, 
+                 c.video_url, c.slide_url, c.level, c.uploaded_at, 
+                 u.name, s.name
+      `);
 
-    // base query with joins for tags
-    let q = `
-      SELECT c.*, s.name AS section_name,
-        STUFF((SELECT ',' + t.name FROM ContentTags ct
-               JOIN Tags t ON ct.tag_id = t.tag_id
-               WHERE ct.content_id = c.content_id
-               FOR XML PATH('')),1,1,'') AS tags
-      FROM Content c
-      JOIN Sections s ON c.section_id = s.section_id
-      WHERE c.is_deleted IS NULL OR c.is_deleted = 0
-    `;
-
-    // add simple filters (avoid SQL injection by using Request/input)
-    const request = new sql.Request();
-    if (section) { q += ' AND c.section_id = @section'; request.input('section', sql.Int, section); }
-    if (speaker) { q += ' AND c.speaker_name LIKE @speaker'; request.input('speaker', sql.NVarChar, `%${speaker}%`); }
-    if (title) { q += ' AND c.title LIKE @title'; request.input('title', sql.NVarChar, `%${title}%`); }
-    // tag filtering is a bit more complex: join via ContentTags
-    if (tag) {
-      q += ` AND EXISTS (SELECT 1 FROM ContentTags ct JOIN Tags t ON ct.tag_id=t.tag_id WHERE ct.content_id=c.content_id AND t.name=@tag)`;
-      request.input('tag', sql.NVarChar, tag);
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ message: "Content not found" });
     }
 
-    const result = await request.query(q);
-    res.json(result.recordset);
+    const item = result.recordset[0];
+
+    res.json({
+      content_id: item.content_id,
+      title: item.title,
+      description: item.description,
+      speaker_name: item.speaker_name,
+      video_url: getYouTubeEmbedUrl(item.video_url), 
+      slide_url: item.slide_url,
+      level: item.level,
+      uploaded_by: item.uploaded_by,
+      section_name: item.section_name,
+      uploaded_at: item.uploaded_at,
+      tags: item.tags ? item.tags.split(", ") : [],
+      thumbnail: getYouTubeThumbnail(item.video_url),
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching content details:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-exports.getContentById = async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const result = await sql.query`
-      SELECT c.*, s.name AS section_name
-      FROM Content c JOIN Sections s ON c.section_id = s.section_id
-      WHERE c.content_id = ${id}
-    `;
-    if (!result.recordset.length) return res.status(404).json({ message: 'Not found' });
-    const content = result.recordset[0];
 
-    // get tags
-    const tags = await sql.query`
-      SELECT t.name FROM ContentTags ct JOIN Tags t ON ct.tag_id = t.tag_id WHERE ct.content_id = ${id}
-    `;
-    content.tags = tags.recordset.map(r => r.name);
-    res.json(content);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+
+// Helper: get or create tags
+const getOrCreateTags = async (tags, pool) => {
+  const tagIds = [];
+
+  for (const tag of tags) {
+    const existingTag = await pool
+      .request()
+      .input("name", sql.VarChar(50), tag)
+      .query("SELECT tag_id FROM Tags WHERE name = @name");
+
+    if (existingTag.recordset.length > 0) {
+      tagIds.push(existingTag.recordset[0].tag_id);
+    } else {
+      const inserted = await pool
+        .request()
+        .input("name", sql.VarChar(50), tag)
+        .query("INSERT INTO Tags (name) OUTPUT INSERTED.tag_id VALUES (@name)");
+      tagIds.push(inserted.recordset[0].tag_id);
+    }
   }
+
+  return tagIds;
 };
 
-exports.updateContent = async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const { title, description, speaker_name, video_url, section_id } = req.body;
-    // allow updating fields if provided
-    await sql.query`
-      UPDATE Content SET
-        title = COALESCE(${title}, title),
-        description = COALESCE(${description}, description),
-        speaker_name = COALESCE(${speaker_name}, speaker_name),
-        video_url = COALESCE(${video_url}, video_url),
-        section_id = COALESCE(${section_id}, section_id)
-      WHERE content_id = ${id}
-    `;
-    res.json({ message: 'Updated' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
+// Upload new content
+exports.uploadContent = async (req, res) => {
+  const {
+    title,
+    description,
+    speaker_name,
+    video_url,
+    slide_url,
+    section_id,
+    level,
+    tags,
+    uploaded_by,
+  } = req.body;
 
-exports.deleteContent = async (req, res) => {
+  if (!title || !section_id || !uploaded_by) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
   try {
-    const id = parseInt(req.params.id);
-    // soft delete
-    await sql.query`UPDATE Content SET is_deleted = 1 WHERE content_id = ${id}`;
-    res.json({ message: 'Deleted (soft)' });
+    const pool = await sql.connect();
+
+    // Insert into Content table
+    const result = await pool
+      .request()
+      .input("title", sql.VarChar(200), title)
+      .input("description", sql.VarChar(sql.MAX), description || null)
+      .input("speaker_name", sql.VarChar(100), speaker_name || null)
+      .input("video_url", sql.VarChar(sql.MAX), video_url || null)
+      .input("slide_url", sql.VarChar(sql.MAX), slide_url || null)
+      .input("section_id", sql.Int, section_id)
+      .input("level", sql.VarChar(20), level || "beginner")
+      .input("uploaded_by", sql.Int, uploaded_by)
+      .query(
+        `INSERT INTO Content (title, description, speaker_name, video_url, slide_url, section_id, level, uploaded_by)
+         OUTPUT INSERTED.content_id
+         VALUES (@title, @description, @speaker_name, @video_url, @slide_url, @section_id, @level, @uploaded_by)`
+      );
+
+    const contentId = result.recordset[0].content_id;
+
+    // Handle tags if provided
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      const tagIds = await getOrCreateTags(tags, pool);
+
+      for (const tagId of tagIds) {
+        await pool
+          .request()
+          .input("content_id", sql.Int, contentId)
+          .input("tag_id", sql.Int, tagId)
+          .query(
+            "INSERT INTO ContentTags (content_id, tag_id) VALUES (@content_id, @tag_id)"
+          );
+      }
+    }
+
+    res.json({ message: "Content uploaded successfully", contentId });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 };

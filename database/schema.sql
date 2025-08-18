@@ -24,6 +24,7 @@ CREATE TABLE Users (
 
 Go
 
+
 CREATE TABLE PendingVerifications (
     email VARCHAR(255) PRIMARY KEY,
     name VARCHAR(255),
@@ -46,8 +47,6 @@ INSERT INTO Sections (name) VALUES
 ('Nespak Preferences'),
 ('Project-Related Documents');
 
-
-
 CREATE TABLE Content (
     content_id INT PRIMARY KEY IDENTITY(1,1),
     title VARCHAR(200) NOT NULL,
@@ -56,6 +55,7 @@ CREATE TABLE Content (
     video_url VARCHAR(MAX),
     slide_url VARCHAR(MAX),
     section_id INT NOT NULL,
+	level VARCHAR(20) CHECK (level IN ('beginner', 'intermediate', 'advanced')) DEFAULT 'beginner',
     uploaded_by INT NOT NULL,
     uploaded_at DATETIME DEFAULT GETDATE(),
 	is_deleted BIT DEFAULT 0,
