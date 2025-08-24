@@ -25,13 +25,14 @@ const handleSubmit = async (e: React.FormEvent) => {
       password,
     });
 
-localStorage.setItem("user_id", res.data.user_id);
-
+    // Store both token and user_id
+    sessionStorage.setItem("token", res.data.token);
+    sessionStorage.setItem("user_id", res.data.user_id);
 
     toast({
       title: "Login Successful",
-      description: "Redirecting to your dashboard...",
-      variant: "default", 
+      description: "Welcome to your dashboard...",
+      variant: "default",
       style: { backgroundColor: "white", color: "black" },
     });
 
@@ -46,6 +47,7 @@ localStorage.setItem("user_id", res.data.user_id);
     });
   }
 };
+
 
 
   return (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -51,7 +51,7 @@ const DashboardLayout = ({
 
   // Fetch user info
   useEffect(() => {
-    const userId = localStorage.getItem("user_id");
+    const userId =  sessionStorage.getItem("user_id");
     if (!userId) return;
 
     axios.get(`${API_BASE_URL}/api/users/${userId}`)
@@ -70,29 +70,48 @@ const DashboardLayout = ({
       .toUpperCase();
   };
 
-  const handleSaveName = () => {
-    if (!user) return;
-    if (!newName.trim()) return; // prevent empty name
+const handleSaveName = () => {
+  const userId = sessionStorage.getItem("user_id");
+  const token = sessionStorage.getItem("token"); // if your API needs auth
 
-    axios.put(`${API_BASE_URL}/api/users/${user.user_id}`, { name: newName })
-      .then(res => {
-        setUser(res.data);
-        setEditingName(false);
-      })
-      .catch(err => console.error("Failed to update name:", err));
-  };
+  if (!userId || !newName.trim()) return;
 
-  const sidebarItems = [
-    { icon: Home, label: "Dashboard", path: "/dashboard" },
-    { icon: BookOpen, label: "Trainings & Development", path: "/training-development" },
-    { icon: Presentation, label: "Nespak Representation", path: "/nespak-representation" },
-    { icon: FileText, label: "Nespak Preferences", path: "/nespak-preferences" },
-    { icon: FolderOpen, label: "Project Documents", path: "/project-documents" },
-    { icon: Shield, label: "Admin Panel", path: "/admin-panel" }
-  ];
+  axios.patch(
+    `${API_BASE_URL}/api/users/${userId}`,
+    { name: newName },
+    {
+      headers: {
+        Authorization: `Bearer ${token}` // optional if your API requires it
+      }
+    }
+  )
+  .then(res => {
+    setUser(res.data);        // update local state
+    setEditingName(false);    // hide edit input
+  })
+  .catch(err => console.error("Failed to update name:", err));
+};
+
+
+  const filteredSidebarItems = useMemo(() => {
+    const items = [
+      { icon: Home, label: "Dashboard", path: "/dashboard" },
+      { icon: BookOpen, label: "Trainings & Development", path: "/training-development" },
+      { icon: Presentation, label: "Nespak Representation", path: "/nespak-representation" },
+      { icon: FileText, label: "Nespak Preferences", path: "/nespak-preferences" },
+      { icon: FolderOpen, label: "Project Documents", path: "/project-documents" },
+    ];
+
+    if (user?.role === "admin") {
+      items.push({ icon: Shield, label: "Admin Panel", path: "/admin-panel" });
+    }
+
+    return items;
+  }, [user]);
 
   const handleLogout = () => {
-    localStorage.removeItem("user_id"); // clear user session
+    sessionStorage.removeItem("user_id");
+    sessionStorage.removeItem("token");
     navigate('/');
   };
 
@@ -101,6 +120,9 @@ const DashboardLayout = ({
     setSearchQuery(query);
     onSearch?.(query);
   };
+
+  // Only show search bar on pages NOT dashboard or admin-panel
+  const showSearchBar = !["/dashboard", "/admin-panel"].some(path => location.pathname.startsWith(path));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -113,26 +135,28 @@ const DashboardLayout = ({
           </div>
 
           {/* Search Bar */}
-          <div className="flex-1 max-w-xl mx-8">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input 
-                placeholder={searchPlaceholder}
-                className="pl-10 pr-4"
-                value={searchQuery}
-                onChange={handleSearchChange}
-              />
+          {showSearchBar && (
+            <div className="flex-1 max-w-xl mx-8">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input 
+                  placeholder={searchPlaceholder}
+                  className="pl-10 pr-4"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Right Side - Notifications & Profile */}
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="relative">
+             {/*<Button variant="ghost" size="icon" className="relative">
               <Bell className="w-5 h-5" />
               <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs bg-red-500 flex items-center justify-center">
                 3
               </Badge>
-            </Button>
+            </Button>*/}
             
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
@@ -179,7 +203,7 @@ const DashboardLayout = ({
         onMouseLeave={() => setSidebarExpanded(false)}
       >
         <nav className="p-4 space-y-2">
-          {sidebarItems.map((item, index) => (
+          {filteredSidebarItems.map((item, index) => (
             <div
               key={index}
               className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${

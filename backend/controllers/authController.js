@@ -1,8 +1,20 @@
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs'); 
 const { sql } = require('../config/db');
 const { sendVerificationCodeEmail } = require('../utils/email');
 const validator = require('validator');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
+// Helper: generate JWT
+const generateToken = (user) => {
+  return jwt.sign(
+    { user_id: user.user_id, role: user.role }, 
+    process.env.JWT_SECRET, 
+    { expiresIn: '7d' } // 7 days token
+  );
+};
+
+// Signup Request: send code to email
 exports.signupRequest = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -13,15 +25,16 @@ exports.signupRequest = async (req, res) => {
     if (!validator.isEmail(email))
       return res.status(400).json({ message: 'Invalid email' });
 
+    // Check domain
     if (!email.toLowerCase().endsWith('@gmail.com')) {
       return res.status(400).json({ message: 'Only Nespak emails allowed' });
     }
 
-   if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
-  return res.status(400).json({ message: 'Password must be at least 8 characters and contain letters and numbers' });
-}
+    if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters and contain letters and numbers' });
+    }
 
-
+    // Check if user exists
     const exists = await sql.query`SELECT user_id FROM Users WHERE email = ${email}`;
     if (exists.recordset.length)
       return res.status(400).json({ message: 'Email already registered' });
@@ -49,6 +62,7 @@ exports.signupRequest = async (req, res) => {
   }
 };
 
+// Verify code & register user
 exports.verifyCodeAndRegister = async (req, res) => {
   try {
     const { email, code } = req.body;
@@ -62,21 +76,28 @@ exports.verifyCodeAndRegister = async (req, res) => {
       return res.status(400).json({ message: 'Invalid code' });
 
     // Insert into Users
-    await sql.query`
+    const insertedUser = await sql.query`
       INSERT INTO Users (name, email, password_hash, role, is_verified)
+      OUTPUT inserted.user_id, inserted.role
       VALUES (${record.name}, ${record.email}, ${record.password_hash}, 'viewer', 1)
     `;
 
-    // Delete from pending table
+    const user = insertedUser.recordset[0];
+
+    // Delete from pending
     await sql.query`DELETE FROM PendingVerifications WHERE email = ${email}`;
 
-    res.json({ message: 'Email verified and account created successfully.' });
+    // Generate JWT
+    const token = generateToken(user);
+
+    res.json({ message: 'Email verified and account created successfully.', token, user_id: user.user_id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
+// Resend code
 exports.resendCode = async (req, res) => {
   try {
     const { email } = req.body;
@@ -96,7 +117,7 @@ exports.resendCode = async (req, res) => {
   }
 };
 
-
+// Login
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -104,8 +125,7 @@ exports.login = async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ message: "Missing email or password" });
 
-    // Get user
-    const userResult = await sql.query`SELECT user_id, password_hash, is_verified FROM Users WHERE email = ${email}`;
+    const userResult = await sql.query`SELECT user_id, password_hash, role, is_verified FROM Users WHERE email = ${email}`;
     if (!userResult.recordset.length)
       return res.status(400).json({ message: "Invalid email or password" });
 
@@ -114,16 +134,15 @@ exports.login = async (req, res) => {
     if (!user.is_verified)
       return res.status(403).json({ message: "Email not verified yet" });
 
-    // Compare password
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch)
       return res.status(400).json({ message: "Invalid email or password" });
 
-    // Send back user_ida
-    res.json({ user_id: user.user_id });
+    const token = generateToken(user);
+
+    res.json({ token, user_id: user.user_id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
-

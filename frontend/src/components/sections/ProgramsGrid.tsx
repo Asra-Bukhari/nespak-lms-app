@@ -41,9 +41,6 @@ const programs: Program[] = [
 const ProgramsGrid = () => {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Program | null>(null);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -52,42 +49,6 @@ const ProgramsGrid = () => {
   const onOpen = (p: Program) => {
     setSelected(p);
     setOpen(true);
-  };
-
-  const handleRequestInfo = async () => {
-    if (!firstName || !lastName || !email) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
-    try {
-      await axios.post(`${API_BASE_URL}/api/requests`, {
-        first_name: firstName,
-        last_name: lastName,
-        email,
-        category: selected?.title || "",
-      });
-
-      toast({
-        title: "Request Submitted",
-        description: "Your request was sent successfully!",
-      });
-
-      setFirstName("");
-      setLastName("");
-      setEmail("");
-      setOpen(false);
-    } catch (error) {
-      console.error("Error submitting request:", error);
-      toast({
-        title: "Submission failed",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
-    }
   };
 
   return (
@@ -145,13 +106,18 @@ const ProgramsGrid = () => {
                 {selected?.description}
               </p>
             </div>
-            <div>
+
+            {/* Right Side - Only Sign In */}
+            <div className="flex flex-col items-center justify-center text-center">
               <DialogHeader>
                 <DialogTitle>Want to know more?</DialogTitle>
               </DialogHeader>
-              <p className="text-sm text-muted-foreground mb-4">
-                Enter your information to learn more about this program at NESPAK.
+              <p className="text-sm text-muted-foreground mb-6">
+                Sign in to learn more about this program at NESPAK.
               </p>
+
+              {/* --- COMMENTED OUT FORM --- */}
+              {/*
               <form
                 className="space-y-3"
                 onSubmit={(e) => {
@@ -160,26 +126,10 @@ const ProgramsGrid = () => {
                 }}
               >
                 <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    placeholder="First Name"
-                    aria-label="First Name"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                  />
-                  <Input
-                    placeholder="Last Name"
-                    aria-label="Last Name"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                  />
+                  <Input placeholder="First Name" />
+                  <Input placeholder="Last Name" />
                 </div>
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  aria-label="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+                <Input type="email" placeholder="Email" />
                 <Button type="submit" variant="hero" className="w-full">
                   Request More Info
                 </Button>
@@ -189,15 +139,20 @@ const ProgramsGrid = () => {
                     <span className="px-4">or</span>
                     <div className="flex-1 h-px bg-border"></div>
                   </div>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => navigate("/signup")}
-                  >
-                    Sign In
-                  </Button>
+              */}
+
+              <Button
+                variant="hero"
+                className="w-full"
+                onClick={() => navigate("/signup")}
+              >
+                Sign In
+              </Button>
+
+              {/*
                 </div>
               </form>
+              */}
             </div>
           </div>
         </DialogContent>

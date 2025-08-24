@@ -59,22 +59,28 @@ const Signup = () => {
     }
   };
 
-  const handleVerify = async () => {
-    try {
-      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/verify-code`, {
-        email,
-        code
-      });
-      toast({ title: "Verified", description: res.data.message });
-      setVerified(true);
-    } catch (err: any) {
-      toast({
-        title: "Invalid code",
-        description: err.response?.data?.message || "Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+const handleVerify = async () => {
+  try {
+    const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/verify-code`, {
+      email,
+      code
+    });
+
+    // Store token and user_id
+    sessionStorage.setItem("token", res.data.token);
+    sessionStorage.setItem("user_id", res.data.user_id);
+
+    toast({ title: "Verified", description: res.data.message });
+    setVerified(true);
+  } catch (err: any) {
+    toast({
+      title: "Invalid code",
+      description: err.response?.data?.message || "Please try again.",
+      variant: "destructive",
+    });
+  }
+};
+
 
   const handleResend = async () => {
     try {

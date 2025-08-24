@@ -91,7 +91,7 @@ const AdminPanel = () => {
         slide_url: uploadForm.slidesUrl,
         level: "beginner",
         tags: uploadForm.tags?.split(",").map((t) => t.trim()) || [],
-        uploaded_by: Number(localStorage.getItem("user_id")),
+        uploaded_by: Number(sessionStorage.getItem("user_id")),
       };
 
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/content`, payload);
@@ -166,6 +166,7 @@ const AdminPanel = () => {
           {/* Action Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {/* Demo Requests */}
+             {/*
             <Dialog>
               <DialogTrigger asChild>
                 <Card className="cursor-pointer hover:shadow-lg transition-shadow">
@@ -220,7 +221,7 @@ const AdminPanel = () => {
                 </div>
               </DialogContent>
             </Dialog>
-
+              */}
             {/* Appoint Admin */}
             <Dialog>
               <DialogTrigger asChild>
@@ -394,6 +395,7 @@ const AdminPanel = () => {
     </CardContent>
   </Card>
 
+ {/*
   <Card>
     <CardContent className="p-6">
       <div className="flex items-center gap-4">
@@ -407,6 +409,7 @@ const AdminPanel = () => {
       </div>
     </CardContent>
   </Card>
+  */}
 
   <Card>
     <CardContent className="p-6">

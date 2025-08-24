@@ -1,5 +1,7 @@
 const sql = require("mssql");
 
+
+
 // helper: extract YouTube thumbnail
 const getYouTubeThumbnail = (url) => {
   if (!url) return null;
@@ -213,5 +215,79 @@ exports.uploadContent = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+// Update content
+exports.updateContent = async (req, res) => {
+  const { contentId } = req.params;
+  const {
+    title,
+    description,
+    speaker_name,
+    video_url,
+    slide_url,
+    section_id,
+    level,
+    tags,
+  } = req.body;
+
+  try {
+    const pool = await sql.connect();
+
+    // Update main content
+await pool.request()
+  .input("contentId", sql.Int, contentId)
+  .input("title", sql.VarChar(200), title || null)
+  .input("description", sql.VarChar(sql.MAX), description || null)
+  .input("speaker_name", sql.VarChar(100), speaker_name || null)
+  .input("video_url", sql.VarChar(sql.MAX), video_url || null)
+  .input("slide_url", sql.VarChar(sql.MAX), slide_url || null)
+  .input("level", sql.VarChar(20), level || "beginner")
+  .query(`
+    UPDATE Content
+    SET title=@title, description=@description, speaker_name=@speaker_name,
+        video_url=@video_url, slide_url=@slide_url, level=@level
+    WHERE content_id=@contentId AND is_deleted=0
+  `);
+
+    // Clear old tags
+    await pool.request()
+      .input("contentId", sql.Int, contentId)
+      .query("DELETE FROM ContentTags WHERE content_id=@contentId");
+
+    // Insert new tags
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      const tagIds = await getOrCreateTags(tags, pool);
+      for (const tagId of tagIds) {
+        await pool.request()
+          .input("content_id", sql.Int, contentId)
+          .input("tag_id", sql.Int, tagId)
+          .query("INSERT INTO ContentTags (content_id, tag_id) VALUES (@content_id, @tag_id)");
+      }
+    }
+
+    res.json({ message: "Content updated successfully" });
+  } catch (err) {
+    console.error("Error updating content:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+// Delete content (soft delete)
+exports.deleteContent = async (req, res) => {
+  const { contentId } = req.params;
+  try {
+    const pool = await sql.connect();
+    await pool.request()
+      .input("contentId", sql.Int, contentId)
+      .query("UPDATE Content SET is_deleted=1 WHERE content_id=@contentId");
+
+    res.json({ message: "Content deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting content:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };

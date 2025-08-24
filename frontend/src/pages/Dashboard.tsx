@@ -33,20 +33,30 @@ const Dashboard = () => {
 
   const [userName, setUserName] = useState("");
 
-  useEffect(() => {
-    const userId = localStorage.getItem("user_id");
-    if (!userId) return;
+useEffect(() => {
+  const userId = sessionStorage.getItem("user_id");
+  const token = sessionStorage.getItem("token");
+  if (!userId || !token) return;
 
-    // Fetch dashboard stats
-    axios.get(`${API_BASE_URL}/api/dashboard/stats?userId=${userId}`)
-      .then(res => setStats(res.data))
-      .catch(err => console.error("Failed to fetch dashboard stats:", err));
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  };
 
-    // Fetch user info
-    axios.get(`${API_BASE_URL}/api/users/${userId}`)
-      .then(res => setUserName(res.data.name))
-      .catch(err => console.error("Failed to fetch user info:", err));
-  }, []);
+  // Fetch dashboard stats
+  axios
+    .get(`${API_BASE_URL}/api/dashboard/stats?userId=${userId}`, config)
+    .then(res => setStats(res.data))
+    .catch(err => console.error("Failed to fetch dashboard stats:", err));
+
+  // Fetch user info
+  axios
+    .get(`${API_BASE_URL}/api/users/${userId}`, config)
+    .then(res => setUserName(res.data.name))
+    .catch(err => console.error("Failed to fetch user info:", err));
+}, []);
+
 
   const moduleCards = [
     { title: "Trainings & Development", path: "/training-development", description: "Capacity building content and professional development", icon: BookOpen, color: "bg-green-500", count: `${stats.trainings} Trainings Available` },
