@@ -30,24 +30,23 @@ const Hero = () => {
           
           <div className="relative flex justify-center items-center">
   <div className="relative flex items-end gap-4"> 
-    {/* Left icon - Laptop */}
+
     <div className="mt-2 animate-[fade-in_1s_ease-out_0.2s_both,_drop-in_0.8s_ease-out_0.2s_both] transform -rotate-6">
       <div className="bg-white/10 backdrop-blur-sm rounded-full p-4 border border-white/20">
-        <Laptop className="w-7 h-7 text-white" /> {/* slightly smaller */}
+        <Laptop className="w-7 h-7 text-white" /> 
       </div>
     </div>
 
-    {/* Center icon - Graduation Cap */}
     <div className="animate-[fade-in_1s_ease-out_0.4s_both,_drop-in_0.8s_ease-out_0.4s_both]">
       <div className="bg-white/15 backdrop-blur-sm rounded-full p-6 border border-white/30 shadow-lg">
-        <GraduationCap className="w-14 h-14 text-white" /> {/* larger */}
+        <GraduationCap className="w-14 h-14 text-white" /> 
       </div>
     </div>
 
-    {/* Right icon - Message Circle */}
+
     <div className="mt-2 animate-[fade-in_1s_ease-out_0.6s_both,_drop-in_0.8s_ease-out_0.6s_both] transform rotate-6">
       <div className="bg-white/10 backdrop-blur-sm rounded-full p-4 border border-white/20">
-        <MessageCircle className="w-7 h-7 text-white" /> {/* slightly smaller */}
+        <MessageCircle className="w-7 h-7 text-white" />
       </div>
     </div>
   </div>

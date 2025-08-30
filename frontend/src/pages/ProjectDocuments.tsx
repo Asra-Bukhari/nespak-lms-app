@@ -27,7 +27,7 @@ const ProjectDocuments = () => {
   const [filteredPrograms, setFilteredPrograms] = useState<Program[]>([]);
   const navigate = useNavigate();
 
-  // Fetch project-related documents from backend (section 4)
+
   useEffect(() => {
     const fetchPrograms = async () => {
       try {

@@ -1,12 +1,12 @@
 const sql = require("mssql");
 
-// GET /api/dashboard/stats
+
 exports.getDashboardStats = async (req, res) => {
   try {
     const pool = await sql.connect();
 
-    // 1️⃣ Modules accessed this week (Views this week for current user)
-    const userId = req.query.userId; // frontend should send user_id as query param
+    // Modules accessed this week (Views this week for current user)
+    const userId = req.query.userId; 
     const accessedResult = await pool.request()
       .input("userId", sql.Int, userId)
       .query(`
@@ -17,7 +17,7 @@ exports.getDashboardStats = async (req, res) => {
       `);
     const modulesAccessed = accessedResult.recordset[0].modules_accessed || 0;
 
-    // 2️⃣ New uploads this month (all new Content uploaded this month)
+    // New uploads this month (all new Content uploaded this month)
     const uploadsResult = await pool.request().query(`
       SELECT COUNT(content_id) AS new_uploads
       FROM Content
@@ -26,7 +26,7 @@ exports.getDashboardStats = async (req, res) => {
     `);
     const newUploads = uploadsResult.recordset[0].new_uploads || 0;
 
-    // 3️⃣ Completed Modules (Views with progress = 100)
+    // Completed Modules (Views with progress = 100)
     const completedResult = await pool.request()
       .input("userId", sql.Int, userId)
       .query(`
@@ -37,7 +37,7 @@ exports.getDashboardStats = async (req, res) => {
       `);
     const completedModules = completedResult.recordset[0].completed_modules || 0;
 
-    // 4️⃣ Section counts (Trainings, Events, Documents, Files)
+    // Section counts (Trainings, Events, Documents, Files)
     const sectionsResult = await pool.request().query(`
       SELECT s.name AS section_name, COUNT(c.content_id) AS content_count
       FROM Sections s
@@ -69,12 +69,12 @@ exports.getDashboardStats = async (req, res) => {
 };
 
 
-// Get stats for each section
+
 exports.getModuleStats = async (req, res) => {
   try {
     const pool = await sql.connect();
     
-    // Query to get counts per section
+
     const result = await pool.request().query(`
       SELECT s.name AS section_name,
              COUNT(c.content_id) AS content_count,
@@ -116,22 +116,22 @@ exports.getAdminDashboardStats = async (req, res) => {
   try {
     const pool = await sql.connect();
 
-    // 1️⃣ Total content (excluding deleted)
+    // Total content (excluding deleted)
     const contentResult = await pool.request()
       .query(`SELECT COUNT(*) AS totalContent FROM Content WHERE is_deleted = 0`);
     const totalContent = contentResult.recordset[0].totalContent || 0;
 
-    // 2️⃣ Active users (role != admin)
+    // Active users (role != admin)
     const usersResult = await pool.request()
       .query(`SELECT COUNT(*) AS activeUsers FROM Users WHERE role != 'admin'`);
     const activeUsers = usersResult.recordset[0].activeUsers || 0;
 
-    // 3️⃣ Pending requests
+    // Pending requests
     const pendingRequestsResult = await pool.request()
       .query(`SELECT COUNT(*) AS pendingRequests FROM Requests WHERE status = 'pending'`);
     const pendingRequests = pendingRequestsResult.recordset[0].pendingRequests || 0;
 
-    // 4️⃣ This month uploads
+    // This month uploads
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const uploadsResult = await pool.request()
       .input('monthStart', sql.DateTime, monthStart)

@@ -72,7 +72,7 @@ const DashboardLayout = ({
 
 const handleSaveName = () => {
   const userId = sessionStorage.getItem("user_id");
-  const token = sessionStorage.getItem("token"); // if your API needs auth
+  const token = sessionStorage.getItem("token"); 
 
   if (!userId || !newName.trim()) return;
 
@@ -81,13 +81,13 @@ const handleSaveName = () => {
     { name: newName },
     {
       headers: {
-        Authorization: `Bearer ${token}` // optional if your API requires it
+        Authorization: `Bearer ${token}` 
       }
     }
   )
   .then(res => {
-    setUser(res.data);        // update local state
-    setEditingName(false);    // hide edit input
+    setUser(res.data);        
+    setEditingName(false);    
   })
   .catch(err => console.error("Failed to update name:", err));
 };
@@ -121,7 +121,7 @@ const handleSaveName = () => {
     onSearch?.(query);
   };
 
-  // Only show search bar on pages NOT dashboard or admin-panel
+  
   const showSearchBar = !["/dashboard", "/admin-panel"].some(path => location.pathname.startsWith(path));
 
   return (
@@ -149,7 +149,7 @@ const handleSaveName = () => {
             </div>
           )}
 
-          {/* Right Side - Notifications & Profile */}
+          {/* Notifications & Profile */}
           <div className="flex items-center gap-4">
              {/*<Button variant="ghost" size="icon" className="relative">
               <Bell className="w-5 h-5" />
@@ -163,7 +163,7 @@ const handleSaveName = () => {
                 {user ? (
                   <AvatarFallback>{getInitials(newName)}</AvatarFallback>
                 ) : (
-                  <AvatarFallback>JD</AvatarFallback>
+                  <AvatarFallback>UNK</AvatarFallback>
                 )}
               </Avatar>
 
@@ -182,7 +182,7 @@ const handleSaveName = () => {
                   className="text-sm font-medium cursor-pointer hover:underline" 
                   onClick={() => setEditingName(true)}
                 >
-                  {user?.name || "John Doe"}
+                  {user?.name || "Unknown"}
                 </span>
               )}
 

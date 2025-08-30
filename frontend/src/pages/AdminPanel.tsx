@@ -11,7 +11,19 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Shield, Upload, UserPlus, FileText, Eye, Mail, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { useToast } from "@/components/ui/use-toast";  // ✅ Import toast hook
+import { useToast } from "@/components/ui/use-toast";  
+import { MessageSquare } from "lucide-react";
+
+interface Feedback {
+  feedback_id: number;
+  name: string;
+  email: string;
+  message: string;
+  topic: string;
+  rating: number;
+  status: string;
+  created_at: string;
+}
 
 interface DemoRequest {
   request_id: number;
@@ -32,7 +44,7 @@ const sectionMap: Record<string, number> = {
 
 const AdminPanel = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();  // ✅ Use toast
+  const { toast } = useToast(); 
 
   const [stats, setStats] = useState({
     totalContent: 0,
@@ -77,6 +89,29 @@ const AdminPanel = () => {
     fetchStats();
     fetchRequests();
   }, []);
+
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+const [unreadCount, setUnreadCount] = useState(0);
+
+const fetchFeedback = async () => {
+  try {
+    const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/feedback`);
+    setFeedbacks(res.data);
+
+    // after fetching, update unread count again
+    const unreadRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/feedback/unread-count`);
+    setUnreadCount(unreadRes.data.unreadCount);
+  } catch (err) {
+    console.error("Error fetching feedback:", err);
+  }
+};
+
+useEffect(() => {
+  fetchStats();
+  fetchRequests();
+  fetchFeedback();
+}, []);
+
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -361,6 +396,75 @@ const AdminPanel = () => {
                 </form>
               </DialogContent>
             </Dialog>
+
+{/* View Feedback */}
+<Dialog
+  onOpenChange={(open) => {
+    if (!open) {
+      
+      axios
+        .patch(`${import.meta.env.VITE_API_BASE_URL}/api/feedback/mark-all-read`)
+        .then(() => fetchFeedback()) 
+        .catch((err) => console.error("Error marking feedback as read:", err));
+    }
+  }}
+>
+  <DialogTrigger asChild>
+    <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <div className="bg-red-100 p-2 rounded-lg">
+            <MessageSquare className="w-6 h-6 text-red-600" />
+          </div>
+          <div>
+            <CardTitle className="text-lg">View Feedback</CardTitle>
+            <CardDescription>See user feedback</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Badge variant="secondary">{unreadCount} New</Badge>
+      </CardContent>
+    </Card>
+  </DialogTrigger>
+  <DialogContent className="max-w-3xl">
+    <DialogHeader>
+      <DialogTitle>User Feedback</DialogTitle>
+      <DialogDescription>Latest feedback from users</DialogDescription>
+    </DialogHeader>
+    <div className="space-y-4 max-h-[400px] overflow-y-auto">
+      {feedbacks.map((fb) => (
+        <div key={fb.feedback_id} className="p-4 border rounded-lg">
+          <div className="flex justify-between items-center">
+            <div>
+              <h4 className="font-medium">
+                {fb.name} ({fb.email})
+              </h4>
+              <p className="text-xs text-gray-500">
+                {new Date(fb.created_at).toLocaleString()}
+              </p>
+              <p className="text-sm mt-2">
+                <strong>Topic:</strong> {fb.topic}
+              </p>
+              <p className="text-sm mt-1">{fb.message}</p>
+              <p className="mt-1 text-yellow-500">
+                {"★".repeat(fb.rating)}
+                {"☆".repeat(5 - fb.rating)}
+              </p>
+            </div>
+            <Badge
+              variant={fb.status === "new" ? "default" : "secondary"}
+            >
+              {fb.status}
+            </Badge>
+          </div>
+        </div>
+      ))}
+    </div>
+  </DialogContent>
+</Dialog>
+
+
           </div>
         </div>
 
@@ -424,8 +528,22 @@ const AdminPanel = () => {
       </div>
     </CardContent>
   </Card>
-</div>
 
+<Card>
+  <CardContent className="p-6">
+    <div className="flex items-center gap-4">
+      <div className="bg-red-100 p-3 rounded-lg">
+        <MessageSquare className="w-6 h-6 text-red-600" />
+      </div>
+      <div>
+        <p className="text-2xl font-bold">{unreadCount}</p>
+        <p className="text-sm text-gray-600">Unread Feedback</p>
+      </div>
+    </div>
+  </CardContent>
+</Card>
+
+</div>
       </div>
     </DashboardLayout>
   );

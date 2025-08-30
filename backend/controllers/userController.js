@@ -36,7 +36,7 @@ exports.updateUserName = async (req, res) => {
       SELECT user_id, name, email, role FROM Users WHERE user_id = ${id};
     `;
 
-    res.json(result.recordset[0]); // Return updated user
+    res.json(result.recordset[0]); 
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -46,7 +46,7 @@ exports.updateUserName = async (req, res) => {
 
 exports.getUserMe = async (req, res) => {
   try {
-    const { user_id } = req.user; // numeric ID from JWT
+    const { user_id } = req.user; 
     const result = await sql.query`
       SELECT user_id, name, email, role
       FROM Users

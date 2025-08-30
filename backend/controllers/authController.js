@@ -26,7 +26,7 @@ exports.signupRequest = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email' });
 
     // Check domain
-    if (!email.toLowerCase().endsWith('@gmail.com')) {
+    if (!email.toLowerCase().endsWith('@nespak.com.pk')) {
       return res.status(400).json({ message: 'Only Nespak emails allowed' });
     }
 

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useToast } from "@/components/ui/use-toast"; // shadcn toast
+import { useToast } from "@/components/ui/use-toast"; 
 
 export type Program = {
   id: string;
@@ -107,7 +107,7 @@ const ProgramsGrid = () => {
               </p>
             </div>
 
-            {/* Right Side - Only Sign In */}
+           
             <div className="flex flex-col items-center justify-center text-center">
               <DialogHeader>
                 <DialogTitle>Want to know more?</DialogTitle>
@@ -116,7 +116,7 @@ const ProgramsGrid = () => {
                 Sign in to learn more about this program at NESPAK.
               </p>
 
-              {/* --- COMMENTED OUT FORM --- */}
+              {/* --- Request Form--- */}
               {/*
               <form
                 className="space-y-3"

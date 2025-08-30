@@ -24,7 +24,7 @@ const TrainingDevelopment = () => {
   const [filteredPrograms, setFilteredPrograms] = useState<Program[]>([]);
   const navigate = useNavigate();
 
-  // Fetch content for sectionId=1 (Trainings & Development)
+
 useEffect(() => {
   const fetchPrograms = async () => {
     try {

@@ -21,7 +21,6 @@ const Signup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Password validation: at least 8 chars, letters + numbers
   const validatePassword = (pwd: string) => {
     const pattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
     return pattern.test(pwd);
@@ -30,7 +29,7 @@ const Signup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check password before submitting
+  
     if (!validatePassword(password)) {
       setPasswordError("Password must be at least 8 characters long and include both letters and numbers");
       return;
@@ -66,7 +65,7 @@ const handleVerify = async () => {
       code
     });
 
-    // Store token and user_id
+    
     sessionStorage.setItem("token", res.data.token);
     sessionStorage.setItem("user_id", res.data.user_id);
 

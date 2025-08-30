@@ -47,7 +47,7 @@ exports.updateProgress = async (req, res) => {
       return res.json({ success: true, progress });
     }
 
-    return res.json({ success: true, progress: oldProgress }); // unchanged
+    return res.json({ success: true, progress: oldProgress }); 
   } catch (err) {
     console.error("updateProgress error:", err);
     res.status(500).json({ error: "Server error" });

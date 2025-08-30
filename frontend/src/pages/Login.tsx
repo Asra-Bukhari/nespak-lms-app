@@ -25,7 +25,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       password,
     });
 
-    // Store both token and user_id
+ 
     sessionStorage.setItem("token", res.data.token);
     sessionStorage.setItem("user_id", res.data.user_id);
 

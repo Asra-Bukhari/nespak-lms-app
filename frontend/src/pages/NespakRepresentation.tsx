@@ -27,7 +27,7 @@ const NespakRepresentation = () => {
   const [filteredPrograms, setFilteredPrograms] = useState<Program[]>([]);
   const navigate = useNavigate();
 
-  // Fetch content for sectionId=2 (NESPAK Representation)
+  
   useEffect(() => {
     const fetchPrograms = async () => {
       try {

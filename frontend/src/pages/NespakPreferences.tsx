@@ -27,7 +27,7 @@ const NespakPreferences = () => {
   const [filteredPrograms, setFilteredPrograms] = useState<Program[]>([]);
   const navigate = useNavigate();
 
-  // Fetch content for sectionId=3 (NESPAK Preferences)
+  
   useEffect(() => {
     const fetchPrograms = async () => {
       try {

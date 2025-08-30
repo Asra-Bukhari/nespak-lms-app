@@ -177,7 +177,6 @@ exports.uploadContent = async (req, res) => {
   try {
     const pool = await sql.connect();
 
-    // Insert into Content table
     const result = await pool
       .request()
       .input("title", sql.VarChar(200), title)
@@ -236,7 +235,7 @@ exports.updateContent = async (req, res) => {
   try {
     const pool = await sql.connect();
 
-    // Update main content
+  
 await pool.request()
   .input("contentId", sql.Int, contentId)
   .input("title", sql.VarChar(200), title || null)

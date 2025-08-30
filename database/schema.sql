@@ -104,10 +104,27 @@ CREATE TABLE Requests (
 
 Go
 
+CREATE TABLE Feedback (
+    feedback_id INT PRIMARY KEY IDENTITY(1,1),
+    user_id INT NOT NULL,                         
+    message VARCHAR(MAX) NOT NULL,                
+	topic VARCHAR(255) NULL,
+    rating INT CHECK (rating BETWEEN 1 AND 5) NULL,
+    status VARCHAR(10) CHECK (status IN ('new', 'old')) DEFAULT 'new', 
+    created_at DATETIME DEFAULT GETDATE(),        
+    viewed_at DATETIME NULL,                    
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
+Go
+
+
 CREATE INDEX idx_content_title ON Content(title);
 CREATE INDEX idx_content_speaker ON Content(speaker_name);
 CREATE INDEX idx_tags_name ON Tags(name);
 CREATE INDEX idx_views_user ON Views(user_id);
 CREATE INDEX idx_content_is_deleted ON Content(is_deleted);
+CREATE INDEX idx_feedback_status ON Feedback(status);
+CREATE INDEX idx_feedback_user ON Feedback(user_id);
 
 Go

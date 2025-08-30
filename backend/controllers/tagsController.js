@@ -36,16 +36,14 @@ exports.deleteTag = async (req, res) => {
 exports.addTagsToContent = async (req, res) => {
   try {
     const content_id = parseInt(req.params.id);
-    const { tags } = req.body; // array of tag names OR ids
+    const { tags } = req.body; 
     if (!Array.isArray(tags)) return res.status(400).json({ message: 'Provide tags array' });
 
     for (const t of tags) {
       if (typeof t === 'number') {
-        // tag id
         await sql.query`IF NOT EXISTS (SELECT 1 FROM ContentTags WHERE content_id=${content_id} AND tag_id=${t})
                         INSERT INTO ContentTags (content_id, tag_id) VALUES (${content_id}, ${t})`;
       } else {
-        // name: ensure tag exists
         const existing = await sql.query`SELECT tag_id FROM Tags WHERE name = ${t}`;
         let tagId;
         if (existing.recordset.length) tagId = existing.recordset[0].tag_id;

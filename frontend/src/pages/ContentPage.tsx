@@ -39,7 +39,7 @@ const ContentPage = () => {
 
 const { toast } = useToast()
 
-  // Admin update modal
+
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [form, setForm] = useState<any>({
     title: "",
@@ -51,7 +51,7 @@ const { toast } = useToast()
     tags: "",
   });
 
-  // Load role from sessionStorage
+
 const [role, setRole] = useState<string | null>(null);
 
 
@@ -62,12 +62,12 @@ useEffect(() => {
   axios
     .get(`${API_BASE_URL}/api/users/${userId}`)
     .then((res) => {
-      setRole(res.data.role?.toLowerCase()); // normalize role
+      setRole(res.data.role?.toLowerCase()); 
     })
     .catch((err) => console.error("Failed to fetch user role:", err));
 }, []);
 
-  // Utility: Extract YouTube Video ID
+
   const extractYouTubeId = (url: string) => {
     const match = url.match(
       /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([\w-]{11})/
@@ -75,7 +75,7 @@ useEffect(() => {
     return match ? match[1] : "";
   };
 
-  // Fetch content & user progress
+
   useEffect(() => {
     if (!id) return;
     const user_id = sessionStorage.getItem("user_id");
@@ -85,7 +85,7 @@ useEffect(() => {
         const res = await axios.get(`${API_BASE_URL}/api/content/${id}`);
         setContent(res.data);
 
-        // Prefill form if admin
+
         setForm({
           title: res.data.title,
           description: res.data.description,
@@ -121,7 +121,7 @@ useEffect(() => {
     };
   }, [id]);
 
-  // Track progress while video plays
+
   const handleStateChange = (event: YouTubeEvent) => {
     if (isCompleted) return;
 
@@ -144,7 +144,7 @@ useEffect(() => {
     }
   };
 
-  // Save progress when back is clicked
+
   const handleBack = async () => {
     const user_id = sessionStorage.getItem("user_id");
     if (user_id && content && !isCompleted) {
@@ -177,7 +177,7 @@ useEffect(() => {
     }
   };
 
-  // Mark course as complete
+
   const handleMarkComplete = async () => {
     const user_id = sessionStorage.getItem("user_id");
     if (!user_id) return;
@@ -195,16 +195,16 @@ useEffect(() => {
     }
   };
 
-// Triggered when user clicks Delete button (opens dialog)
+
 const confirmDelete = () => {
   setShowDeleteModal(true);
 };
 
-// State for delete modal
+
 const [showDeleteModal, setShowDeleteModal] = useState(false);
 const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
 
-// Actual delete API call
+
 const handleDelete = async () => {
   try {
     await axios.delete(`${API_BASE_URL}/api/content/${id}`, {
@@ -213,7 +213,7 @@ const handleDelete = async () => {
 
     setDeleteMessage("✅ Content deleted successfully!");
 
-    // Auto-close after 1.5s and go back
+
     setTimeout(() => {
       setShowDeleteModal(false);
       navigate("/dashboard");
@@ -226,7 +226,6 @@ const handleDelete = async () => {
 
 
 
-  // Update Content
   const handleUpdate = async () => {
     try {
       await axios.patch(
@@ -330,7 +329,7 @@ const handleDelete = async () => {
               </Card>
             </div>
 
-            {/* Sidebar */}
+
             <div className="space-y-6">
               {/* Related Material */}
               <Card>
@@ -452,7 +451,7 @@ const handleDelete = async () => {
   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
     <div className="bg-white rounded-lg shadow-xl w-full max-w-lg flex flex-col">
       
-      {/* Scrollable content */}
+
       <div className="p-6 space-y-6 overflow-y-auto max-h-[80vh]">
         <h2 className="text-xl font-semibold border-b pb-2">
           Update Content
