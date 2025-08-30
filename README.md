@@ -212,7 +212,7 @@ VITE_API_BASE_URL=your_backend_base_url   # e.g. http://localhost:5000
 
 ## 👩‍💻 Contributors
 
-- **Asra Bukhari** – Developer (Backend + Frontend)
+- **Asra Bukhari** – Developer
 - NESPAK IT Team – Supervisors
 
 ---
