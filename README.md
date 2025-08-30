@@ -154,7 +154,6 @@ VITE_API_BASE_URL=your_backend_base_url   # e.g. http://localhost:5000
    npm run dev
    ```
 
-   Runs on [http://localhost:5000](http://localhost:5000)
 
 3. **Setup Frontend**
    Open a new terminal:
@@ -165,7 +164,7 @@ VITE_API_BASE_URL=your_backend_base_url   # e.g. http://localhost:5000
    npm run dev
    ```
 
-   Runs on [http://localhost:5173](http://localhost:5173)
+  Don't forget to add .env files with variables mentioned above.
 
 ---
 
