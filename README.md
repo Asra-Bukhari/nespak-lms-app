@@ -207,14 +207,6 @@ VITE_API_BASE_URL=your_backend_base_url   # e.g. http://localhost:5000
 - File validation (PDF only for slides, YouTube link validation for videos)
 - Soft-delete for recoverable content management
 
----
-
-## 📌 Future Enhancements
-
-- Comments & discussion threads
-- Assignments & quizzes
-- Advanced analytics dashboards
-- Activating the **Requests Module**
 
 ---
 
